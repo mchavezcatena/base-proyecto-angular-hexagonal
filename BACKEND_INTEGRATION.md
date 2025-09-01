@@ -164,8 +164,8 @@ Edita `src/app/infrastructure/config/api.config.ts` y cambia la `baseUrl` por la
 
 ```typescript
 export const API_CONFIG = {
-  baseUrl: 'https://tu-backend.com/api', // 👈 Cambia esto
-  // ...
+  baseUrl: environment.apiUrl, // ⚠️ Configurado por ambiente
+  timeout: environment.api?.timeout || 5000, // Timeout configurable por ambiente
 };
 ```
 
