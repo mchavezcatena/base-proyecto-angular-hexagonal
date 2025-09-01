@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { GlobalStateService } from '../../services/global.service';
 
 @Component({
   selector: 'app-footer',
@@ -12,5 +13,10 @@ import { RouterModule } from '@angular/router';
 export class FooterComponent {
   currentYear = new Date().getFullYear();
 
-  constructor() {}
+  // Inyección del servicio global
+  private globalState = inject(GlobalStateService);
+
+  // Signals para el tema
+  isDarkMode = this.globalState.isDarkMode;
+  currentTheme = this.globalState.currentTheme;
 }
