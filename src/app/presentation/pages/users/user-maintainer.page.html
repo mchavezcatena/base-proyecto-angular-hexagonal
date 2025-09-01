@@ -1,0 +1,118 @@
+<div class="page-container">
+  <header class="page-header">
+    <h1>Gestión de Usuarios</h1>
+    <button class="btn btn-primary" (click)="showCreateForm.set(!showCreateForm())">
+      {{ showCreateForm() ? 'Cancelar' : 'Nuevo Usuario' }}
+    </button>
+  </header>
+
+  <!-- Formulario de creación -->
+  <div class="form-section" *ngIf="showCreateForm()">
+    <h2>{{ editingUser() ? 'Editar Usuario' : 'Crear Nuevo Usuario' }}</h2>
+    <form (ngSubmit)="onSubmit()" #userForm="ngForm">
+      <div class="form-group">
+        <label for="name">Nombre:</label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          [ngModel]="userFormData().name"
+          (ngModelChange)="updateFormName($event)"
+          required
+          #nameInput="ngModel"
+          class="form-control"
+          [class.error]="nameInput.invalid && nameInput.touched"
+        >
+        <div *ngIf="nameInput.invalid && nameInput.touched" class="error-message">
+          El nombre es requerido
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email:</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          [ngModel]="userFormData().email"
+          (ngModelChange)="updateFormEmail($event)"
+          required
+          email
+          #emailInput="ngModel"
+          class="form-control"
+          [class.error]="emailInput.invalid && emailInput.touched"
+        >
+        <div *ngIf="emailInput.invalid && emailInput.touched" class="error-message">
+          <span *ngIf="emailInput.errors?.['required']">El email es requerido</span>
+          <span *ngIf="emailInput.errors?.['email']">Formato de email inválido</span>
+        </div>
+      </div>
+
+      <div *ngIf="formErrorMessage()" class="alert alert-error">
+        {{ formErrorMessage() }}
+      </div>
+
+      <div class="form-actions">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="userForm.invalid || isLoading()"
+        >
+          {{ isLoading() ? 'Guardando...' : (editingUser() ? 'Actualizar' : 'Crear') }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cancelEdit()"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Lista de usuarios -->
+  <div class="users-section">
+    <h2>Usuarios Registrados</h2>
+
+    <div *ngIf="isLoadingUsers()" class="loading">
+      Cargando usuarios...
+    </div>
+
+    <div *ngIf="!isLoadingUsers() && users().length === 0" class="empty-state">
+      No hay usuarios registrados
+    </div>
+
+    <div class="users-grid" *ngIf="!isLoadingUsers() && users().length > 0">
+      <div class="user-card" *ngFor="let user of users()">
+        <div class="user-info">
+          <h3>{{ user.name }}</h3>
+          <p class="user-email">{{ user.email.value }}</p>
+          <p class="user-status">
+            <span class="status-badge" [class.active]="user.isActive">
+              {{ user.isActive ? 'Activo' : 'Inactivo' }}
+            </span>
+          </p>
+          <p class="user-date">
+            Creado: {{ user.createdAt | date:'dd/MM/yyyy' }}
+          </p>
+        </div>
+        <div class="user-actions">
+          <button
+            class="btn btn-sm btn-secondary"
+            (click)="editUser(user)"
+          >
+            Editar
+          </button>
+          <button
+            class="btn btn-sm btn-danger"
+            (click)="deleteUser(user.id.value)"
+            [disabled]="isDeleting() === user.id.value"
+          >
+            {{ isDeleting() === user.id.value ? 'Eliminando...' : 'Eliminar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

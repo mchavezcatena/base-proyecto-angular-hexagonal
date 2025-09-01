@@ -1,0 +1,122 @@
+<div class="assign-roles-container">
+  <div class="header">
+    <h1>Asignar Roles</h1>
+    <p>Gestiona los roles asignados a cada usuario del sistema</p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading()" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando usuarios...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error() && !loading()" class="error-state">
+    <div class="error-icon">⚠️</div>
+    <p>{{ error() }}</p>
+    <button class="retry-button" (click)="refreshData()">
+      Reintentar
+    </button>
+  </div>
+
+    <!-- Users Table -->
+  <div *ngIf="!loading() && !error()" class="users-section">
+    <div class="section-header">
+      <h2>Usuarios del Sistema</h2>
+      <span class="users-count">{{ usersWithRoles().length }} usuarios</span>
+    </div>
+
+    <div *ngIf="usersWithRoles().length === 0" class="empty-state">
+      <div class="empty-icon">👥</div>
+      <h3>No hay usuarios disponibles</h3>
+      <p>No se encontraron usuarios en el sistema.</p>
+    </div>
+
+    <div *ngIf="usersWithRoles().length > 0" class="table-container">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Email</th>
+            <th>Estado</th>
+            <th>Roles Actuales</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let userWithRoles of usersWithRoles()"
+              [class.inactive-row]="!userWithRoles.user.isActive">
+
+            <!-- Usuario -->
+            <td class="user-cell">
+              <div class="user-info">
+                <div class="user-avatar">
+                  <span>{{ userWithRoles.user.name.charAt(0).toUpperCase() }}</span>
+                </div>
+                <div class="user-name">
+                  {{ userWithRoles.user.name }}
+                </div>
+              </div>
+            </td>
+
+            <!-- Email -->
+            <td class="email-cell">
+              {{ userWithRoles.user.email.value }}
+            </td>
+
+            <!-- Estado -->
+            <td class="status-cell">
+              <span
+                class="status-badge"
+                [class.active]="userWithRoles.user.isActive"
+                [class.inactive]="!userWithRoles.user.isActive">
+                {{ userWithRoles.user.isActive ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+
+            <!-- Roles Actuales -->
+            <td class="roles-cell">
+              <div *ngIf="userWithRoles.loading" class="roles-loading">
+                <span class="loading-spinner"></span>
+                Cargando...
+              </div>
+
+              <div *ngIf="!userWithRoles.loading && userWithRoles.roles.length === 0"
+                   class="no-roles">
+                No se han asignado roles
+              </div>
+
+              <div *ngIf="!userWithRoles.loading && userWithRoles.roles.length > 0"
+                   class="roles-list">
+                <span *ngFor="let role of userWithRoles.roles; let last = last"
+                      class="role-tag">
+                  {{ role.name }}<span *ngIf="!last">, </span>
+                </span>
+              </div>
+            </td>
+
+            <!-- Acciones -->
+            <td class="actions-cell">
+              <button
+                class="assign-roles-btn"
+                (click)="openRoleAssignmentModal(userWithRoles.user)"
+                [disabled]="!userWithRoles.user.isActive">
+                <span class="btn-icon">🎯</span>
+                Asignar Roles
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Role Assignment Modal -->
+  <app-role-assignment-modal
+    *ngIf="showModal() && selectedUser()"
+    [user]="selectedUser()!"
+    [roles]="allRoles()"
+    (rolesAssigned)="onRolesAssigned($event)"
+    (modalClosed)="closeModal()">
+  </app-role-assignment-modal>
+</div>

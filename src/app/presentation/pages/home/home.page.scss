@@ -1,0 +1,115 @@
+.home-container {
+  min-height: calc(70vh - 64px);
+  background: var(--bg-secondary);
+  transition: background-color 0.3s ease;
+}
+
+.main-content {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.welcome-section {
+  background: var(--bg-primary);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 2rem;
+  text-align: center;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+
+  h1 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+    font-size: 2rem;
+    transition: color 0.3s ease;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    transition: color 0.3s ease;
+  }
+}
+
+.login-link {
+  color: var(--accent-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+
+  &:hover {
+    text-decoration: underline;
+    color: var(--accent-primary-hover);
+  }
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.dashboard-card {
+  background: var(--bg-primary);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s ease;
+  text-decoration: none;
+  color: inherit;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+    transition: color 0.3s ease;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    transition: color 0.3s ease;
+  }
+}
+
+.card-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.info-section {
+  background: var(--bg-primary);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+
+  h2 {
+    margin-top: 0;
+    color: var(--text-primary);
+    transition: color 0.3s ease;
+  }
+
+  ul {
+    line-height: 1.8;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+  }
+
+  li {
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+  }
+}

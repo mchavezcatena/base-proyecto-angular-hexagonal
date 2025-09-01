@@ -1,0 +1,145 @@
+<div class="page-container">
+  <header class="page-header">
+    <h1>Gestión de Roles</h1>
+    <button class="btn btn-primary" (click)="showCreateForm.set(!showCreateForm())">
+      {{ showCreateForm() ? 'Cancelar' : 'Nuevo Rol' }}
+    </button>
+  </header>
+
+  <!-- Formulario de creación/edición -->
+  <div class="form-section" *ngIf="showCreateForm()">
+    <h2>{{ editingRole() ? 'Editar Rol' : 'Crear Nuevo Rol' }}</h2>
+    <form (ngSubmit)="onSubmit()" #roleForm="ngForm">
+      <div class="form-group">
+        <label for="name">Nombre del Rol:</label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          [ngModel]="roleFormData().name"
+          (ngModelChange)="updateFormName($event)"
+          required
+          #nameInput="ngModel"
+          class="form-control"
+          [class.error]="nameInput.invalid && nameInput.touched"
+        >
+        <div *ngIf="nameInput.invalid && nameInput.touched" class="error-message">
+          El nombre es requerido
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Descripción:</label>
+        <textarea
+          id="description"
+          name="description"
+          [ngModel]="roleFormData().description"
+          (ngModelChange)="updateFormDescription($event)"
+          required
+          rows="3"
+          #descriptionInput="ngModel"
+          class="form-control"
+          [class.error]="descriptionInput.invalid && descriptionInput.touched"
+        ></textarea>
+        <div *ngIf="descriptionInput.invalid && descriptionInput.touched" class="error-message">
+          La descripción es requerida
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Permisos:</label>
+        <div class="permissions-grid">
+          <label *ngFor="let permission of availablePermissions" class="permission-checkbox">
+            <input
+              type="checkbox"
+              [value]="permission.key"
+              [checked]="isPermissionSelected(permission.key)"
+              (change)="onPermissionChange(permission.key, $event)"
+            >
+            <span>{{ permission.label }}</span>
+          </label>
+        </div>
+      </div>
+
+      <div *ngIf="formErrorMessage()" class="alert alert-error">
+        {{ formErrorMessage() }}
+      </div>
+
+      <div class="form-actions">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="roleForm.invalid || isLoading()"
+        >
+          {{ isLoading() ? 'Guardando...' : (editingRole() ? 'Actualizar' : 'Crear') }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cancelEdit()"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Lista de roles -->
+  <div class="roles-section">
+    <h2>Roles Registrados</h2>
+
+    <div *ngIf="isLoadingRoles()" class="loading">
+      Cargando roles...
+    </div>
+
+    <div *ngIf="!isLoadingRoles() && roles().length === 0" class="empty-state">
+      No hay roles registrados
+    </div>
+
+    <div class="roles-grid" *ngIf="!isLoadingRoles() && roles().length > 0">
+      <div class="role-card" *ngFor="let role of roles()">
+        <div class="role-info">
+          <h3>{{ role.name }}</h3>
+          <p class="role-description">{{ role.description }}</p>
+          <div class="role-permissions">
+            <h4>Permisos:</h4>
+            <div class="permissions-list">
+              <span
+                *ngFor="let permission of role.permissions"
+                class="permission-tag"
+              >
+                {{ getPermissionLabel(permission) }}
+              </span>
+              <span *ngIf="role.permissions.length === 0" class="no-permissions">
+                Sin permisos asignados
+              </span>
+            </div>
+          </div>
+          <p class="role-status">
+            <span class="status-badge" [class.active]="role.isActive">
+              {{ role.isActive ? 'Activo' : 'Inactivo' }}
+            </span>
+          </p>
+          <p class="role-date">
+            Creado: {{ role.createdAt | date:'dd/MM/yyyy' }}
+          </p>
+        </div>
+        <div class="role-actions">
+          <button
+            class="btn btn-sm btn-secondary"
+            (click)="editRole(role)"
+          >
+            Editar
+          </button>
+          <button
+            class="btn btn-sm btn-danger"
+            (click)="deleteRole(role.id.value)"
+            [disabled]="isDeleting() === role.id.value"
+          >
+            {{ isDeleting() === role.id.value ? 'Eliminando...' : 'Eliminar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
