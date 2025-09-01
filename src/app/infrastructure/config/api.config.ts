@@ -1,6 +1,8 @@
+import { environment } from '../../../environments/environment';
+
 export const API_CONFIG = {
-  baseUrl: 'http://localhost:3000/api', // Cambia esta URL por la de tu backend
-  timeout: 5000, // Timeout de 5 segundos
+  baseUrl: environment.apiUrl,
+  timeout: environment.api?.timeout || 5000, // Timeout configurable por ambiente
   endpoints: {
     auth: {
       login: '/auth/login',
