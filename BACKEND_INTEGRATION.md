@@ -205,8 +205,8 @@ Backend findAll failed, using fallback: 404 Not Found
 ```typescript
 // En api.config.ts
 export const API_CONFIG = {
-  timeout: 10000, // 10 segundos
-  // ...
+  baseUrl: environment.apiUrl, // ⚠️ Configurado por ambiente
+  timeout: environment.api?.timeout || 5000, // Timeout configurable por ambiente
 };
 ```
 
