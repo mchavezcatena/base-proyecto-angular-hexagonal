@@ -2,31 +2,33 @@
   <main class="main-content">
     <div class="welcome-section">
       <h1>¡Bienvenido al Sistema de Gestión!</h1>
-      <p *ngIf="!IsAuth()">Explora las funcionalidades disponibles. Para acceder a todas las características, puedes <a routerLink="/login" class="login-link">iniciar sesión</a> desde el navbar.</p>
+      @if(!IsAuth()){
+        <p >Explora las funcionalidades disponibles. Para acceder a todas las características, puedes <a routerLink="/login" class="login-link">iniciar sesión</a> desde el navbar.</p>
+      }
     </div>
 
 
+    @if(IsAuth()){
+      <div class="dashboard-grid" >
+        <div class="dashboard-card" routerLink="/users" >
+          <div class="card-icon">👥</div>
+          <h3>Gestión de Usuarios</h3>
+          <p>Crear, editar y administrar usuarios del sistema</p>
+        </div>
 
-    <div class="dashboard-grid" >
-      <div class="dashboard-card" routerLink="/users" *ngIf="IsAuth()">
-        <div class="card-icon">👥</div>
-        <h3>Gestión de Usuarios</h3>
-        <p>Crear, editar y administrar usuarios del sistema</p>
+        <div class="dashboard-card" routerLink="/roles" >
+          <div class="card-icon">🔐</div>
+          <h3>Gestión de Roles</h3>
+          <p>Administrar roles y permisos del sistema</p>
+        </div>
+
+        <div class="dashboard-card" routerLink="/assign-roles">
+          <div class="card-icon">🎯</div>
+          <h3>Asignar Roles</h3>
+          <p>Asignar roles a usuarios específicos</p>
+        </div>
       </div>
-
-      <div class="dashboard-card" routerLink="/roles" *ngIf="IsAuth()">
-        <div class="card-icon">🔐</div>
-        <h3>Gestión de Roles</h3>
-        <p>Administrar roles y permisos del sistema</p>
-      </div>
-
-      <div class="dashboard-card" routerLink="/assign-roles" *ngIf="IsAuth()">
-        <div class="card-icon">🎯</div>
-        <h3>Asignar Roles</h3>
-        <p>Asignar roles a usuarios específicos</p>
-      </div>
-    </div>
-
+    }
 
   </main>
 </div>

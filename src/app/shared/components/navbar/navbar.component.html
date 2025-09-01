@@ -16,12 +16,14 @@
 
     <!-- Desktop Menu -->
     <div class="navbar-menu desktop-menu">
-      <div class="navbar-nav" *ngIf="currentSession()">
+     @if(currentSession()){
+      <div class="navbar-nav" >
         <a routerLink="/home" routerLinkActive="active" class="nav-link">Inicio</a>
         <a routerLink="/users" routerLinkActive="active" class="nav-link">Usuarios</a>
         <a routerLink="/roles" routerLinkActive="active" class="nav-link">Roles</a>
         <a routerLink="/assign-roles" routerLinkActive="active" class="nav-link">Asignar Roles</a>
       </div>
+     }
 
       <div class="navbar-actions">
         <!-- Theme Toggle -->
@@ -31,14 +33,14 @@
                 aria-label="Cambiar tema">
           <span class="theme-icon">{{ themeIcon() }}</span>
         </button>
-        <div *ngIf="currentSession(); else loginButton" class="user-menu">
-          <span class="user-email">{{ currentSession()!.email.value }}</span>
-          <button class="btn btn-outline" (click)="logout()">Cerrar Sesión</button>
-        </div>
-
-        <ng-template #loginButton>
+        @if (currentSession()) {
+          <div class="user-menu">
+            <span class="user-email">{{ currentSession()!.email.value }}</span>
+            <button class="btn btn-outline" (click)="logout()">Cerrar Sesión</button>
+          </div>
+        } @else {
           <button class="btn btn-primary" routerLink="/login">Iniciar Sesión</button>
-        </ng-template>
+        }
       </div>
     </div>
 
@@ -59,47 +61,51 @@
 
       <div class="mobile-menu-content">
         <!-- User Info -->
-        <div *ngIf="currentSession()" class="mobile-user-info">
-          <div class="mobile-user-avatar">
-            <span>{{ currentSession()!.email.value.charAt(0).toUpperCase() }}</span>
+        @if (currentSession()) {
+          <div class="mobile-user-info">
+            <div class="mobile-user-avatar">
+              <span>{{ currentSession()!.email.value.charAt(0).toUpperCase() }}</span>
+            </div>
+            <div class="mobile-user-details">
+              <span class="mobile-user-email">{{ currentSession()!.email.value }}</span>
+              <span class="mobile-user-status">Conectado</span>
+            </div>
           </div>
-          <div class="mobile-user-details">
-            <span class="mobile-user-email">{{ currentSession()!.email.value }}</span>
-            <span class="mobile-user-status">Conectado</span>
-          </div>
-        </div>
+        }
 
         <!-- Navigation Links -->
-        <div class="mobile-nav" *ngIf="currentSession()">
-          <a routerLink="/home"
-             routerLinkActive="active"
-             class="mobile-nav-link"
-             (click)="closeMobileMenu()">
-            <span class="nav-icon">🏠</span>
-            Inicio
-          </a>
-          <a routerLink="/users"
-             routerLinkActive="active"
-             class="mobile-nav-link"
-             (click)="closeMobileMenu()">
-            <span class="nav-icon">👥</span>
-            Usuarios
-          </a>
-          <a routerLink="/roles"
-             routerLinkActive="active"
-             class="mobile-nav-link"
-             (click)="closeMobileMenu()">
-            <span class="nav-icon">🔐</span>
-            Roles
-          </a>
-          <a routerLink="/assign-roles"
-             routerLinkActive="active"
-             class="mobile-nav-link"
-             (click)="closeMobileMenu()">
-            <span class="nav-icon">🎯</span>
-            Asignar Roles
-          </a>
-        </div>
+        @if (currentSession()) {
+          <div class="mobile-nav">
+            <a routerLink="/home"
+               routerLinkActive="active"
+               class="mobile-nav-link"
+               (click)="closeMobileMenu()">
+              <span class="nav-icon">🏠</span>
+              Inicio
+            </a>
+            <a routerLink="/users"
+               routerLinkActive="active"
+               class="mobile-nav-link"
+               (click)="closeMobileMenu()">
+              <span class="nav-icon">👥</span>
+              Usuarios
+            </a>
+            <a routerLink="/roles"
+               routerLinkActive="active"
+               class="mobile-nav-link"
+               (click)="closeMobileMenu()">
+              <span class="nav-icon">🔐</span>
+              Roles
+            </a>
+            <a routerLink="/assign-roles"
+               routerLinkActive="active"
+               class="mobile-nav-link"
+               (click)="closeMobileMenu()">
+              <span class="nav-icon">🎯</span>
+              Asignar Roles
+            </a>
+          </div>
+        }
 
         <!-- Mobile Actions -->
         <div class="mobile-actions">
@@ -109,19 +115,17 @@
             {{ themeLabel() }}
           </button>
 
-          <div *ngIf="currentSession(); else mobileLoginButton">
+          @if (currentSession()) {
             <button class="mobile-logout-btn" (click)="logout(); closeMobileMenu()">
               <span class="btn-icon">🚪</span>
               Cerrar Sesión
             </button>
-          </div>
-
-          <ng-template #mobileLoginButton>
+          } @else {
             <button class="mobile-login-btn" routerLink="/login" (click)="closeMobileMenu()">
               <span class="btn-icon">🔑</span>
               Iniciar Sesión
             </button>
-          </ng-template>
+          }
         </div>
       </div>
     </div>

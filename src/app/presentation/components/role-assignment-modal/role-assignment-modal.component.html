@@ -22,10 +22,12 @@
     <!-- Modal Body -->
     <div class="modal-body">
       <!-- Error Message -->
-      <div *ngIf="error()" class="error-message">
+     @if (error()) {
+      <div class="error-message">
         <span class="error-icon">⚠️</span>
         {{ error() }}
       </div>
+     }
 
       <!-- Roles Selection -->
       <div class="roles-section">
@@ -33,18 +35,23 @@
           <h4>Seleccionar Roles</h4>
           <div class="selection-info">
             <span class="selected-count">{{ selectedRolesCount() }} seleccionados</span>
-            <span *ngIf="hasChanges()" class="changes-count">{{ roleChangesCount() }} cambios</span>
+            @if (hasChanges()) {
+              <span class="changes-count">{{ roleChangesCount() }} cambios</span>
+            }
           </div>
         </div>
 
-        <div *ngIf="availableRoles().length === 0" class="no-roles-message">
+        @if (availableRoles().length === 0) {
+          <div class="no-roles-message">
           <div class="no-roles-icon">🔒</div>
           <p>No hay roles disponibles para asignar</p>
-        </div>
+          </div>
+        }
 
-        <div *ngIf="availableRoles().length > 0" class="roles-grid">
-          <div
-            *ngFor="let role of availableRoles()"
+        @if (availableRoles().length > 0) {
+          <div class="roles-grid">
+            @for (role of availableRoles(); track role.id) {
+              <div
             class="role-item"
             [class.selected]="isRoleSelected(role.id.value)"
             [class.currently-assigned]="isRoleCurrentlyAssigned(role.id.value)">
@@ -62,55 +69,68 @@
               <div class="role-header">
                 <h5>{{ role.name }}</h5>
                 <div class="role-badges">
-                  <span
-                    *ngIf="isRoleCurrentlyAssigned(role.id.value)"
+                  @if (isRoleCurrentlyAssigned(role.id.value)) {
+                    <span
+                    class="badge current-badge">
                     class="badge current-badge">
                     Actual
                   </span>
-                  <span
-                    *ngIf="role.permissions.length > 0"
+                  }
+                  @if (role.permissions.length > 0) {
+                    <span
                     class="badge permissions-badge">
                     {{ role.permissions.length }} permisos
                   </span>
+                  }
                 </div>
               </div>
 
               <p class="role-description">{{ role.description || 'Sin descripción' }}</p>
 
-              <div *ngIf="role.permissions.length > 0" class="role-permissions">
-                <span class="permissions-label">Permisos:</span>
-                <div class="permissions-list">
-                  <span
-                    *ngFor="let permission of role.permissions.slice(0, 3)"
-                    class="permission-tag">
-                    {{ permission }}
-                  </span>
-                  <span
-                    *ngIf="role.permissions.length > 3"
-                    class="permission-tag more">
-                    +{{ role.permissions.length - 3 }} más
-                  </span>
+              @if(role.permissions.length > 0){
+                <div class="role-permissions">
+                  <span class="permissions-label">Permisos:</span>
+                  <div class="permissions-list">
+                   @for (permission of role.permissions.slice(0, 3); track permission) {
+                    <span
+                      class="permission-tag">
+                      {{ permission }}
+                    </span>
+                   }
+                    @if(role.permissions.length > 3){
+                      <span
+                      class="permission-tag more">
+                      +{{ role.permissions.length - 3 }} más
+                    </span>
+                    }
+                  </div>
                 </div>
-              </div>
+              }
             </div>
           </div>
-        </div>
+            }
+          </div>
+        }
       </div>
 
       <!-- Selection Summary -->
-      <div *ngIf="selectedRolesCount() > 0" class="selection-summary">
-        <h5>Resumen de Asignación</h5>
-        <div class="summary-content">
-          <div class="summary-item">
-            <span class="summary-label">Roles seleccionados:</span>
-            <span class="summary-value">{{ selectedRolesCount() }}</span>
-          </div>
-          <div *ngIf="hasChanges()" class="summary-item">
-            <span class="summary-label">Cambios a realizar:</span>
-            <span class="summary-value">{{ roleChangesCount() }}</span>
+      @if(selectedRolesCount() > 0){
+        <div class="selection-summary">
+          <h5>Resumen de Asignación</h5>
+          <div class="summary-content">
+            <div class="summary-item">
+              <span class="summary-label">Roles seleccionados:</span>
+              <span class="summary-value">{{ selectedRolesCount() }}</span>
+            </div>
+            @if(hasChanges()){
+              <div class="summary-item">
+                <span class="summary-label">Cambios a realizar:</span>
+                <span class="summary-value">{{ roleChangesCount() }}</span>
+              </div>
+            }
           </div>
         </div>
-      </div>
+      }
     </div>
 
     <!-- Modal Footer -->
@@ -128,11 +148,15 @@
         (click)="onAssignRoles()"
         type="button"
         [disabled]="loading() || selectedRolesCount() === 0">
-        <span *ngIf="loading()" class="loading-spinner"></span>
-        <span *ngIf="!loading()">
-          {{ hasChanges() ? 'Guardar Cambios' : 'Asignar Roles' }}
-        </span>
-        <span *ngIf="loading()">Asignando...</span>
+        @if(!loading()){
+        <span>
+            {{ hasChanges() ? 'Guardar Cambios' : 'Asignar Roles' }}
+          </span>
+        }
+        @if(loading()){
+          <span class="loading-spinner"></span>
+          Asignando...
+        }
       </button>
     </div>
   </div>
