@@ -6,27 +6,22 @@
   <div class="login-card">
     <h2>Iniciar Sesión</h2>
 
-    <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <div class="form-group">
         <label for="email">Email:</label>
         <input
           type="email"
           id="email"
-          name="email"
-          [ngModel]="credentials().email"
-          (ngModelChange)="updateEmail($event)"
-          required
-          email
-          #emailInput="ngModel"
+          formControlName="email"
           class="form-control"
-          [class.error]="emailInput.invalid && emailInput.touched"
+          [class.error]="email?.invalid && email?.touched"
         >
-        @if(emailInput.invalid && emailInput.touched){
+        @if(email?.invalid && email?.touched){
           <div class="error-message">
-            @if(emailInput.errors?.['required']){
+            @if(email?.errors?.['required']){
               <span>El email es requerido</span>
             }
-            @if(emailInput.errors?.['email']){
+            @if(email?.errors?.['email']){
               <span>Formato de email inválido</span>
             }
           </div>
@@ -38,21 +33,16 @@
         <input
           type="password"
           id="password"
-          name="password"
-          [ngModel]="credentials().password"
-          (ngModelChange)="updatePassword($event)"
-          required
-          minlength="6"
-          #passwordInput="ngModel"
+          formControlName="password"
           class="form-control"
-          [class.error]="passwordInput.invalid && passwordInput.touched"
+          [class.error]="password?.invalid && password?.touched"
         >
-        @if(passwordInput.invalid && passwordInput.touched){
+        @if(password?.invalid && password?.touched){
           <div  class="error-message">
-            @if(passwordInput.errors?.['required']){
+            @if(password?.errors?.['required']){
               <span>La contraseña es requerida</span>
             }
-            @if(passwordInput.errors?.['minlength']){
+            @if(password?.errors?.['minlength']){
               <span>La contraseña debe tener al menos 6 caracteres</span>
             }
           </div>
@@ -68,7 +58,7 @@
       <button
         type="submit"
         class="btn btn-primary"
-        [disabled]="loginForm.invalid || isLoading()"
+        [disabled]="!canSubmit()"
       >
        @if(!isLoading()){
         <span>Iniciar Sesión</span>

@@ -2,7 +2,7 @@
 
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthServicePort, AUTH_SERVICE_PORT } from '../../../core/application';
 import { GlobalStateService } from '../../../shared/services/global.service';
@@ -10,7 +10,7 @@ import { GlobalStateService } from '../../../shared/services/global.service';
 @Component({
   selector: 'app-login-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './login.page.html',
   styleUrls: ['./login.page.scss']
 })
@@ -19,21 +19,21 @@ export class LoginPage {
   private authService = inject(AUTH_SERVICE_PORT);
   private router = inject(Router);
   private globalState = inject(GlobalStateService);
+  private fb = inject(FormBuilder);
 
   // Usar signals del estado global
   isLoading = this.globalState.authLoading;
   errorMessage = this.globalState.authError;
 
-  // Signals locales para el formulario
-  credentials = signal({
-    email: '',
-    password: ''
+  // Formulario reactivo
+  loginForm: FormGroup = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]]
   });
 
   // Computed signals
   canSubmit = computed(() => {
-    const creds = this.credentials();
-    return !this.isLoading() && creds.email.trim() !== '' && creds.password.trim() !== '';
+    return !this.isLoading() && this.loginForm.valid;
   });
 
   async onSubmit(): Promise<void> {
@@ -43,8 +43,8 @@ export class LoginPage {
     this.globalState.clearAuthError();
 
     try {
-      const creds = this.credentials();
-      const result = await this.authService.login(creds.email, creds.password);
+      const formValue = this.loginForm.value;
+      const result = await this.authService.login(formValue.email, formValue.password);
 
       if (result.success && result.session) {
         this.globalState.setAuthSession(result.session);
@@ -61,11 +61,7 @@ export class LoginPage {
     }
   }
 
-  updateEmail(email: string): void {
-    this.credentials.update(creds => ({ ...creds, email }));
-  }
-
-  updatePassword(password: string): void {
-    this.credentials.update(creds => ({ ...creds, password }));
-  }
+  // Getters para facilitar el acceso a los controles en el template
+  get email() { return this.loginForm.get('email'); }
+  get password() { return this.loginForm.get('password'); }
 }

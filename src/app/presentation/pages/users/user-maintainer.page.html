@@ -10,23 +10,24 @@
   @if(showCreateForm()){
     <div class="form-section" >
       <h2>{{ editingUser() ? 'Editar Usuario' : 'Crear Nuevo Usuario' }}</h2>
-      <form (ngSubmit)="onSubmit()" #userForm="ngForm">
+      <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
         <div class="form-group">
           <label for="name">Nombre:</label>
           <input
             type="text"
             id="name"
-            name="name"
-            [ngModel]="userFormData().name"
-            (ngModelChange)="updateFormName($event)"
-            required
-            #nameInput="ngModel"
+            formControlName="name"
             class="form-control"
-            [class.error]="nameInput.invalid && nameInput.touched"
+            [class.error]="name?.invalid && name?.touched"
           >
-          @if(nameInput.invalid && nameInput.touched){
+          @if(name?.invalid && name?.touched){
             <div  class="error-message">
-              El nombre es requerido
+              @if(name?.errors?.['required']){
+                <span>El nombre es requerido</span>
+              }
+              @if(name?.errors?.['minlength']){
+                <span>El nombre debe tener al menos 2 caracteres</span>
+              }
             </div>
           }
         </div>
@@ -36,21 +37,16 @@
           <input
             type="email"
             id="email"
-            name="email"
-            [ngModel]="userFormData().email"
-            (ngModelChange)="updateFormEmail($event)"
-            required
-            email
-            #emailInput="ngModel"
+            formControlName="email"
             class="form-control"
-            [class.error]="emailInput.invalid && emailInput.touched"
+            [class.error]="email?.invalid && email?.touched"
           >
-          @if(emailInput.invalid && emailInput.touched){
+          @if(email?.invalid && email?.touched){
             <div class="error-message">
-            @if(emailInput.errors?.['required']){
+            @if(email?.errors?.['required']){
               <span>El email es requerido</span>
             }
-            @if(emailInput.errors?.['email']){
+            @if(email?.errors?.['email']){
               <span >Formato de email inválido</span>
             }
             </div>

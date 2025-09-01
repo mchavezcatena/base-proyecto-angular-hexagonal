@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UserServicePort, USER_SERVICE_PORT } from '../../../core/application';
 import { User } from '../../../core/domain/entities/user.entity';
 import { GlobalStateService } from '../../../shared/services/global.service';
@@ -8,7 +8,7 @@ import { GlobalStateService } from '../../../shared/services/global.service';
 @Component({
   selector: 'app-user-maintainer-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './user-maintainer.page.html',
   styleUrls: ['./user-maintainer.page.scss']
 })
@@ -16,6 +16,7 @@ export class UserMaintainerPage implements OnInit {
   // Inyección moderna
   private userService = inject(USER_SERVICE_PORT);
   private globalState = inject(GlobalStateService);
+  private fb = inject(FormBuilder);
 
   // Signals
   users = signal<User[]>([]);
@@ -25,9 +26,11 @@ export class UserMaintainerPage implements OnInit {
   isDeleting = signal('');
   editingUser = signal<User | null>(null);
   formErrorMessage = signal('');
-  userFormData = signal({
-    name: '',
-    email: ''
+
+  // Formulario reactivo
+  userForm: FormGroup = this.fb.group({
+    name: ['', [Validators.required, Validators.minLength(2)]],
+    email: ['', [Validators.required, Validators.email]]
   });
 
   // Computed signals
@@ -57,42 +60,34 @@ export class UserMaintainerPage implements OnInit {
     }
   }
 
-  initializeFormData(): void {
-    this.userFormData.set({
-      name: '',
-      email: ''
-    });
-    this.formErrorMessage.set('');
-  }
-
   async onSubmit(): Promise<void> {
-    if (this.isLoading()) return;
+    if (this.isLoading() || this.userForm.invalid) return;
 
     this.isLoading.set(true);
     this.formErrorMessage.set('');
 
     try {
       let result;
-      const formData = this.userFormData();
+      const formValue = this.userForm.value;
       const editingUser = this.editingUser();
 
       if (editingUser) {
         result = await this.userService.updateUser(
           editingUser.id.value,
-          formData.name,
-          formData.email
+          formValue.name,
+          formValue.email
         );
       } else {
         result = await this.userService.createUser(
-          formData.name,
-          formData.email
+          formValue.name,
+          formValue.email
         );
       }
 
       if (result.success) {
         this.showCreateForm.set(false);
         this.editingUser.set(null);
-        this.initializeFormData();
+        this.userForm.reset();
         await this.loadUsers();
 
         // Mostrar notificación de éxito
@@ -112,7 +107,7 @@ export class UserMaintainerPage implements OnInit {
 
   editUser(user: User): void {
     this.editingUser.set(user);
-    this.userFormData.set({
+    this.userForm.patchValue({
       name: user.name,
       email: user.email.value
     });
@@ -123,7 +118,8 @@ export class UserMaintainerPage implements OnInit {
   cancelEdit(): void {
     this.showCreateForm.set(false);
     this.editingUser.set(null);
-    this.initializeFormData();
+    this.userForm.reset();
+    this.formErrorMessage.set('');
   }
 
   async deleteUser(userId: string): Promise<void> {
@@ -149,12 +145,7 @@ export class UserMaintainerPage implements OnInit {
     }
   }
 
-  // Métodos helper para el template
-  updateFormName(name: string): void {
-    this.userFormData.update(data => ({ ...data, name }));
-  }
-
-  updateFormEmail(email: string): void {
-    this.userFormData.update(data => ({ ...data, email }));
-  }
+  // Getters para facilitar el acceso a los controles en el template
+  get name() { return this.userForm.get('name'); }
+  get email() { return this.userForm.get('email'); }
 }

@@ -27,7 +27,6 @@ export class TokenService {
    * Obtiene el token actual
    */
   getCurrentToken(): string {
-    console.log('getCurrentTokenaki', this.tokenSubject.value);
     return this.tokenSubject.value;
   }
 

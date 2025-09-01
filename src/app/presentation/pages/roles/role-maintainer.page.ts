@@ -1,13 +1,13 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { RoleServicePort, ROLE_SERVICE_PORT } from '../../../core/application';
 import { Role } from '../../../core/domain/entities/role.entity';
 
 @Component({
   selector: 'app-role-maintainer-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './role-maintainer.page.html',
   styleUrls: ['./role-maintainer.page.scss']
 
@@ -16,6 +16,7 @@ import { Role } from '../../../core/domain/entities/role.entity';
 export class RoleMaintainerPage implements OnInit {
   // Inyección moderna
   private roleService = inject(ROLE_SERVICE_PORT);
+  private fb = inject(FormBuilder);
 
   // Signals
   roles = signal<Role[]>([]);
@@ -25,10 +26,12 @@ export class RoleMaintainerPage implements OnInit {
   isLoadingRoles = signal(false);
   isDeleting = signal('');
   formErrorMessage = signal('');
-  roleFormData = signal({
-    name: '',
-    description: '',
-    permissions: [] as string[]
+
+  // Formulario reactivo
+  roleForm: FormGroup = this.fb.group({
+    name: ['', [Validators.required, Validators.minLength(2)]],
+    description: ['', [Validators.required, Validators.minLength(10)]],
+    permissions: this.fb.array([])
   });
 
   // Computed signals
@@ -49,9 +52,7 @@ export class RoleMaintainerPage implements OnInit {
     { key: 'manage_system', label: 'Administrar Sistema' }
   ];
 
-  async ngOnInit(): Promise<void> {
-    await this.loadRoles();
-  }
+
 
   async loadRoles(): Promise<void> {
     this.isLoadingRoles.set(true);
@@ -68,27 +69,28 @@ export class RoleMaintainerPage implements OnInit {
   }
 
   async onSubmit(): Promise<void> {
-    if (this.isLoading()) return;
+    if (this.isLoading() || this.roleForm.invalid) return;
 
     this.isLoading.set(true);
     this.formErrorMessage.set('');
 
     try {
       let result;
-      const formData = this.roleFormData();
+      const formValue = this.roleForm.value;
       const editingRole = this.editingRole();
 
       if (editingRole) {
         result = await this.roleService.updateRole(
           editingRole.id.value,
-          formData.name,
-          formData.description
+          formValue.name,
+          formValue.description
         );
       } else {
+        const selectedPermissions = this.getSelectedPermissions();
         result = await this.roleService.createRole(
-          formData.name,
-          formData.description,
-          formData.permissions
+          formValue.name,
+          formValue.description,
+          selectedPermissions
         );
       }
 
@@ -108,11 +110,11 @@ export class RoleMaintainerPage implements OnInit {
 
   editRole(role: Role): void {
     this.editingRole.set(role);
-    this.roleFormData.set({
+    this.roleForm.patchValue({
       name: role.name,
-      description: role.description,
-      permissions: [...role.permissions]
+      description: role.description
     });
+    this.initializePermissions(role.permissions);
     this.showCreateForm.set(true);
     this.formErrorMessage.set('');
   }
@@ -120,25 +122,32 @@ export class RoleMaintainerPage implements OnInit {
   cancelEdit(): void {
     this.editingRole.set(null);
     this.showCreateForm.set(false);
-    this.roleFormData.set({ name: '', description: '', permissions: [] });
+    this.roleForm.reset();
+    this.initializePermissions([]);
     this.formErrorMessage.set('');
   }
 
-  onPermissionChange(permission: string, event: any): void {
-    const formData = this.roleFormData();
-    if (event.target.checked) {
-      if (!formData.permissions.includes(permission)) {
-        this.roleFormData.update(data => ({
-          ...data,
-          permissions: [...data.permissions, permission]
-        }));
-      }
-    } else {
-      this.roleFormData.update(data => ({
-        ...data,
-        permissions: data.permissions.filter(p => p !== permission)
-      }));
-    }
+  initializePermissions(selectedPermissions: string[] = []): void {
+    const permissionsArray = this.roleForm.get('permissions') as FormArray;
+    permissionsArray.clear();
+
+    this.availablePermissions.forEach(permission => {
+      permissionsArray.push(
+        this.fb.control(selectedPermissions.includes(permission.key))
+      );
+    });
+  }
+
+  onPermissionChange(index: number, event: any): void {
+    const permissionsArray = this.roleForm.get('permissions') as FormArray;
+    permissionsArray.at(index).setValue(event.target.checked);
+  }
+
+  getSelectedPermissions(): string[] {
+    const permissionsArray = this.roleForm.get('permissions') as FormArray;
+    return this.availablePermissions
+      .filter((permission, index) => permissionsArray.at(index).value)
+      .map(permission => permission.key);
   }
 
   getPermissionLabel(permissionKey: string): string {
@@ -167,16 +176,18 @@ export class RoleMaintainerPage implements OnInit {
     }
   }
 
-  // Métodos helper para el template
-  updateFormName(name: string): void {
-    this.roleFormData.update(data => ({ ...data, name }));
+  async ngOnInit(): Promise<void> {
+    await this.loadRoles();
+    this.initializePermissions();
   }
 
-  updateFormDescription(description: string): void {
-    this.roleFormData.update(data => ({ ...data, description }));
-  }
+  // Getters para facilitar el acceso a los controles en el template
+  get name() { return this.roleForm.get('name'); }
+  get description() { return this.roleForm.get('description'); }
+  get permissions() { return this.roleForm.get('permissions') as FormArray; }
 
-  isPermissionSelected(permission: string): boolean {
-    return this.roleFormData().permissions.includes(permission);
+  isPermissionSelected(index: number): boolean {
+    const permissionsArray = this.roleForm.get('permissions') as FormArray;
+    return permissionsArray.at(index)?.value || false;
   }
 }

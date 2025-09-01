@@ -10,23 +10,24 @@
  @if(showCreateForm()){
   <div class="form-section">
     <h2>{{ editingRole() ? 'Editar Rol' : 'Crear Nuevo Rol' }}</h2>
-    <form (ngSubmit)="onSubmit()" #roleForm="ngForm">
+    <form [formGroup]="roleForm" (ngSubmit)="onSubmit()">
       <div class="form-group">
         <label for="name">Nombre del Rol:</label>
         <input
           type="text"
           id="name"
-          name="name"
-          [ngModel]="roleFormData().name"
-          (ngModelChange)="updateFormName($event)"
-          required
-          #nameInput="ngModel"
+          formControlName="name"
           class="form-control"
-          [class.error]="nameInput.invalid && nameInput.touched"
+          [class.error]="name?.invalid && name?.touched"
         >
-       @if(nameInput.invalid  && nameInput.touched){
+       @if(name?.invalid && name?.touched){
         <div  class="error-message">
-          El nombre es requerido
+          @if(name?.errors?.['required']){
+            <span>El nombre es requerido</span>
+          }
+          @if(name?.errors?.['minlength']){
+            <span>El nombre debe tener al menos 2 caracteres</span>
+          }
         </div>
        }
       </div>
@@ -35,38 +36,36 @@
         <label for="description">Descripción:</label>
         <textarea
           id="description"
-          name="description"
-          [ngModel]="roleFormData().description"
-          (ngModelChange)="updateFormDescription($event)"
-          required
+          formControlName="description"
           rows="3"
-          #descriptionInput="ngModel"
           class="form-control"
-          [class.error]="descriptionInput.invalid && descriptionInput.touched"
+          [class.error]="description?.invalid && description?.touched"
         ></textarea>
-        @if(descriptionInput.invalid && descriptionInput.touched){
+        @if(description?.invalid && description?.touched){
           <div class="error-message">
-            La descripción es requerida
+            @if(description?.errors?.['required']){
+              <span>La descripción es requerida</span>
+            }
+            @if(description?.errors?.['minlength']){
+              <span>La descripción debe tener al menos 10 caracteres</span>
+            }
           </div>
         }
       </div>
 
       <div class="form-group">
         <label>Permisos:</label>
-        <div class="permissions-grid">
-          @for(permission of availablePermissions; track permission.key){
+        <div class="permissions-grid" formArrayName="permissions">
+          @for(permission of availablePermissions; track permission.key; let i = $index){
             <label class="permission-checkbox">
               <input
-              type="checkbox"
-              [value]="permission.key"
-              [checked]="isPermissionSelected(permission.key)"
-              (change)="onPermissionChange(permission.key, $event)"
-            >
-            <span>{{ permission.label }}</span>
-          </label>
+                type="checkbox"
+                [formControlName]="i"
+                (change)="onPermissionChange(i, $event)"
+              >
+              <span>{{ permission.label }}</span>
+            </label>
           }
-
-
         </div>
       </div>
 
