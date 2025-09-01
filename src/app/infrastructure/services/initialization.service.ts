@@ -11,6 +11,7 @@ export class InitializationService {
     private roleRepository: RoleRepositoryImpl
   ) {}
 
+  //en caso de no querer cargar datos de prueba solo comentar aqui
   async initializeTestData(): Promise<void> {
     // Simular un pequeño delay para mostrar el loading
     await new Promise(resolve => setTimeout(resolve, 500));

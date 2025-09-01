@@ -1,27 +1,38 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { RouterTestingModule } from '@angular/router/testing';
+import { signal } from '@angular/core';
 
 import { LoginPage } from './login.page';
 import { AuthServicePort } from '../../../core/application/ports/auth.service.port';
 import { AUTH_SERVICE_PORT } from '../../../core/application/ports/injection-tokens';
+import { GlobalStateService } from '../../../shared/services/global.service';
+import { AuthSession } from '../../../core/domain/entities/auth-session.entity';
 
 describe('LoginPage', () => {
   let component: LoginPage;
   let fixture: ComponentFixture<LoginPage>;
   let mockAuthService: jasmine.SpyObj<AuthServicePort>;
   let mockRouter: jasmine.SpyObj<Router>;
+  let mockGlobalState: jasmine.SpyObj<GlobalStateService>;
 
   beforeEach(async () => {
     const authServiceSpy = jasmine.createSpyObj('AuthServicePort', ['login']);
     const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    const globalStateSpy = jasmine.createSpyObj('GlobalStateService', [
+      'setAuthLoading', 'clearAuthError', 'setAuthSession', 'showSuccess', 'setAuthError'
+    ], {
+      authLoading: signal(false),
+      authError: signal<string | null>(null)
+    });
 
     await TestBed.configureTestingModule({
-      imports: [LoginPage, FormsModule, RouterTestingModule],
+      imports: [LoginPage, ReactiveFormsModule, RouterTestingModule],
       providers: [
         { provide: AUTH_SERVICE_PORT, useValue: authServiceSpy },
-        { provide: Router, useValue: routerSpy }
+        { provide: Router, useValue: routerSpy },
+        { provide: GlobalStateService, useValue: globalStateSpy }
       ]
     }).compileComponents();
 
@@ -29,6 +40,7 @@ describe('LoginPage', () => {
     component = fixture.componentInstance;
     mockAuthService = TestBed.inject(AUTH_SERVICE_PORT) as jasmine.SpyObj<AuthServicePort>;
     mockRouter = TestBed.inject(Router) as jasmine.SpyObj<Router>;
+    mockGlobalState = TestBed.inject(GlobalStateService) as jasmine.SpyObj<GlobalStateService>;
     fixture.detectChanges();
   });
 
@@ -36,11 +48,12 @@ describe('LoginPage', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should initialize with empty credentials', () => {
-    expect(component.credentials.email).toBe('');
-    expect(component.credentials.password).toBe('');
-    expect(component.isLoading).toBeFalse();
-    expect(component.errorMessage).toBe('');
+  it('should initialize with valid form', () => {
+    expect(component.loginForm).toBeTruthy();
+    expect(component.loginForm.get('email')?.value).toBe('');
+    expect(component.loginForm.get('password')?.value).toBe('');
+    expect(component.isLoading()).toBeFalse();
+    expect(component.errorMessage()).toBeNull();
   });
 
   it('should render login form', () => {
@@ -76,73 +89,107 @@ describe('LoginPage', () => {
   });
 
   it('should handle successful login', async () => {
-    const mockResult = { success: true };
+    const mockResult = { success: true, session: {} as AuthSession };
     mockAuthService.login.and.returnValue(Promise.resolve(mockResult));
 
-    component.credentials.email = 'test@example.com';
-    component.credentials.password = 'password123';
+    component.loginForm.patchValue({
+      email: 'test@example.com',
+      password: 'password123'
+    });
 
     await component.onSubmit();
 
     expect(mockAuthService.login).toHaveBeenCalledWith('test@example.com', 'password123');
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/home']);
-    expect(component.errorMessage).toBe('');
-    expect(component.isLoading).toBeFalse();
+    expect(mockGlobalState.setAuthSession).toHaveBeenCalled();
+    expect(mockGlobalState.showSuccess).toHaveBeenCalledWith('¡Inicio de sesión exitoso!');
   });
 
   it('should handle failed login', async () => {
     const mockResult = { success: false, error: 'Invalid credentials' };
     mockAuthService.login.and.returnValue(Promise.resolve(mockResult));
 
-    component.credentials.email = 'test@example.com';
-    component.credentials.password = 'wrongpassword';
+    component.loginForm.patchValue({
+      email: 'test@example.com',
+      password: 'wrongpassword'
+    });
 
     await component.onSubmit();
 
     expect(mockAuthService.login).toHaveBeenCalledWith('test@example.com', 'wrongpassword');
     expect(mockRouter.navigate).not.toHaveBeenCalled();
-    expect(component.errorMessage).toBe('Invalid credentials');
-    expect(component.isLoading).toBeFalse();
+    expect(mockGlobalState.setAuthError).toHaveBeenCalledWith('Invalid credentials');
   });
 
   it('should handle login exception', async () => {
     mockAuthService.login.and.returnValue(Promise.reject(new Error('Network error')));
 
-    component.credentials.email = 'test@example.com';
-    component.credentials.password = 'password123';
+    component.loginForm.patchValue({
+      email: 'test@example.com',
+      password: 'password123'
+    });
 
     await component.onSubmit();
 
-    expect(component.errorMessage).toBe('Error inesperado. Intente nuevamente.');
-    expect(component.isLoading).toBeFalse();
+    expect(mockGlobalState.setAuthError).toHaveBeenCalledWith('Error inesperado. Intente nuevamente.');
   });
 
-  it('should not submit if already loading', async () => {
-    component.isLoading = true;
+  it('should not submit if form is invalid', async () => {
+    component.loginForm.patchValue({
+      email: 'invalid-email',
+      password: '123' // too short
+    });
 
     await component.onSubmit();
 
     expect(mockAuthService.login).not.toHaveBeenCalled();
   });
 
-  it('should show loading state during login', async () => {
-    let resolveLogin: (value: any) => void;
-    const loginPromise = new Promise((resolve) => {
-      resolveLogin = resolve;
+  it('should validate email and password', () => {
+    const emailControl = component.loginForm.get('email');
+    const passwordControl = component.loginForm.get('password');
+
+    // Test invalid email
+    emailControl?.setValue('invalid-email');
+    expect(emailControl?.invalid).toBeTruthy();
+
+    // Test valid email
+    emailControl?.setValue('test@example.com');
+    expect(emailControl?.valid).toBeTruthy();
+
+    // Test short password
+    passwordControl?.setValue('123');
+    expect(passwordControl?.invalid).toBeTruthy();
+
+    // Test valid password
+    passwordControl?.setValue('password123');
+    expect(passwordControl?.valid).toBeTruthy();
+  });
+
+  it('should have canSubmit computed signal working correctly', () => {
+    // Form invalid, loading false
+    expect(component.canSubmit()).toBeFalsy();
+
+    // Form valid, loading false
+    component.loginForm.patchValue({
+      email: 'test@example.com',
+      password: 'password123'
+    });
+    expect(component.canSubmit()).toBeTruthy();
+
+    // Test canSubmit when loading (mock the signal to return true)
+    Object.defineProperty(mockGlobalState, 'authLoading', {
+      value: signal(true),
+      writable: true
     });
 
-    mockAuthService.login.and.returnValue(loginPromise);
-
-    component.credentials.email = 'test@example.com';
-    component.credentials.password = 'password123';
-
-    const submitPromise = component.onSubmit();
-
-    expect(component.isLoading).toBeTruthy();
-
-    resolveLogin!({ success: true });
-    await submitPromise;
-
-    expect(component.isLoading).toBeFalse();
+    // Recreate component to use new mock
+    fixture = TestBed.createComponent(LoginPage);
+    component = fixture.componentInstance;
+    component.loginForm.patchValue({
+      email: 'test@example.com',
+      password: 'password123'
+    });
+    expect(component.canSubmit()).toBeFalsy();
   });
 });

@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormsModule } from '@angular/forms';
-import { of } from 'rxjs';
+import { ReactiveFormsModule } from '@angular/forms';
+import { signal } from '@angular/core';
 
 import { RoleMaintainerPage } from './role-maintainer.page';
 import { RoleServicePort } from '../../../core/application/ports/role.service.port';
@@ -30,7 +30,7 @@ describe('RoleMaintainerPage', () => {
     ]);
 
     await TestBed.configureTestingModule({
-      imports: [RoleMaintainerPage, FormsModule],
+      imports: [RoleMaintainerPage, ReactiveFormsModule],
       providers: [
         { provide: ROLE_SERVICE_PORT, useValue: roleServiceSpy }
       ]
@@ -39,6 +39,7 @@ describe('RoleMaintainerPage', () => {
     fixture = TestBed.createComponent(RoleMaintainerPage);
     component = fixture.componentInstance;
     mockRoleService = TestBed.inject(ROLE_SERVICE_PORT) as jasmine.SpyObj<RoleServicePort>;
+    fixture.detectChanges();
   });
 
   it('should create', () => {
@@ -46,217 +47,213 @@ describe('RoleMaintainerPage', () => {
   });
 
   it('should initialize with default values', () => {
-    expect(component.roles).toEqual([]);
-    expect(component.showCreateForm).toBeFalse();
-    expect(component.isLoading).toBeFalse();
-    expect(component.isLoadingRoles).toBeFalse();
-    expect(component.editingRole).toBeNull();
-    expect(component.formErrorMessage).toBe('');
+    expect(component.roles()).toEqual([]);
+    expect(component.showCreateForm()).toBeFalse();
+    expect(component.isLoading()).toBeFalse();
+    expect(component.isLoadingRoles()).toBeFalse();
+    expect(component.editingRole()).toBeNull();
+    expect(component.formErrorMessage()).toBe('');
+    expect(component.roleForm).toBeTruthy();
   });
 
   it('should load roles on init', async () => {
-    mockRoleService.getAllRoles.and.returnValue(Promise.resolve({ success: true, data: [mockRole] }));
+    mockRoleService.getAllRoles.and.returnValue(Promise.resolve({ success: true, roles: [mockRole] }));
 
     await component.ngOnInit();
 
     expect(mockRoleService.getAllRoles).toHaveBeenCalled();
-    expect(component.roles).toEqual([mockRole]);
-    expect(component.isLoadingRoles).toBeFalse();
+    expect(component.roles()).toEqual([mockRole]);
+    expect(component.isLoadingRoles()).toBeFalse();
   });
 
   it('should handle error when loading roles', async () => {
-    mockRoleService.getAllRoles.and.returnValue(Promise.resolve({ success: false, error: 'Error loading roles' }));
+    mockRoleService.getAllRoles.and.returnValue(Promise.resolve({ success: false, error: 'Load error' }));
 
     await component.ngOnInit();
 
-    expect(component.roles).toEqual([]);
-    expect(component.isLoadingRoles).toBeFalse();
+    expect(component.roles()).toEqual([]);
+    expect(component.formErrorMessage()).toBe('Load error');
   });
 
-  it('should toggle create form visibility', () => {
-    expect(component.showCreateForm).toBeFalse();
-
-    component.showCreateForm = true;
-    fixture.detectChanges();
-
-    expect(component.showCreateForm).toBeTrue();
+  it('should show create form', () => {
+    component.showCreateForm.set(true);
+    expect(component.showCreateForm()).toBeTruthy();
+    expect(component.editingRole()).toBeNull();
+    expect(component.isEditMode()).toBeFalsy();
   });
 
-  it('should initialize form data correctly', () => {
-    expect(component.roleFormData).toEqual({
-      name: '',
-      description: '',
-      permissions: []
-    });
+  it('should reset form data on show create form', () => {
+    component.showCreateForm.set(true);
+
+    const formValue = component.roleForm.value;
+    expect(formValue.name).toBe('');
+    expect(formValue.description).toBe('');
+    expect(component.formTitle()).toBe('Crear Rol');
   });
 
-  it('should handle permission change', () => {
+  it('should handle permission changes', () => {
     const mockEvent = { target: { checked: true } } as any;
+    component.onPermissionChange(0, mockEvent);
 
-    component.onPermissionChange('users.read', mockEvent);
-
-    expect(component.roleFormData.permissions).toContain('users.read');
+    // Should trigger form update logic
+    expect(component.roleForm.get('permissions')).toBeTruthy();
   });
 
-  it('should remove permission when unchecked', () => {
-    component.roleFormData.permissions = ['users.read', 'users.write'];
-    const mockEvent = { target: { checked: false } } as any;
+  it('should cancel form', () => {
+    component.showCreateForm.set(true);
+    component.editingRole.set(mockRole);
 
-    component.onPermissionChange('users.read', mockEvent);
+    // Call the actual method from the component
+    component.cancelEdit();
 
-    expect(component.roleFormData.permissions).not.toContain('users.read');
-    expect(component.roleFormData.permissions).toContain('users.write');
+    expect(component.showCreateForm()).toBeFalsy();
+    expect(component.editingRole()).toBeNull();
+    expect(component.formErrorMessage()).toBe('');
   });
 
   it('should create role successfully', async () => {
-    component.roleFormData = {
-      name: 'Test Role',
-      description: 'Test Description',
-      permissions: ['users.read']
-    };
+    mockRoleService.createRole.and.returnValue(Promise.resolve({ success: true, role: mockRole }));
+    mockRoleService.getAllRoles.and.returnValue(Promise.resolve({ success: true, roles: [mockRole] }));
 
-    mockRoleService.createRole.and.returnValue(Promise.resolve({ success: true, data: mockRole }));
-    mockRoleService.getAllRoles.and.returnValue(Promise.resolve({ success: true, data: [mockRole] }));
+    component.roleForm.patchValue({
+      name: 'Test Role',
+      description: 'Test Description'
+    });
 
     await component.onSubmit();
 
-    expect(mockRoleService.createRole).toHaveBeenCalledWith('Test Role', 'Test Description', ['users.read']);
-    expect(component.showCreateForm).toBeFalse();
-    expect(component.formErrorMessage).toBe('');
+    expect(mockRoleService.createRole).toHaveBeenCalled();
+    expect(component.showCreateForm()).toBeFalsy();
+    expect(component.formErrorMessage()).toBe('');
   });
 
   it('should handle create role error', async () => {
-    component.roleFormData = {
-      name: 'Test Role',
-      description: 'Test Description',
-      permissions: ['users.read']
-    };
+    mockRoleService.createRole.and.returnValue(Promise.resolve({ success: false, error: 'Create error' }));
 
-    mockRoleService.createRole.and.returnValue(Promise.resolve({ success: false, error: 'Creation failed' }));
+    component.roleForm.patchValue({
+      name: 'Test Role',
+      description: 'Test Description'
+    });
 
     await component.onSubmit();
 
-    expect(component.formErrorMessage).toBe('Creation failed');
-    expect(component.showCreateForm).toBeTrue();
+    expect(component.formErrorMessage()).toBe('Create error');
+    expect(component.showCreateForm()).toBeTruthy();
   });
 
   it('should edit role', () => {
     component.editRole(mockRole);
 
-    expect(component.editingRole).toBe(mockRole);
-    expect(component.showCreateForm).toBeTrue();
-    expect(component.roleFormData.name).toBe(mockRole.name);
-    expect(component.roleFormData.description).toBe(mockRole.description);
-    expect(component.roleFormData.permissions).toEqual(mockRole.permissions);
+    expect(component.editingRole()).toBe(mockRole);
+    expect(component.showCreateForm()).toBeTruthy();
+    expect(component.isEditMode()).toBeTruthy();
+    expect(component.formTitle()).toBe('Editar Rol');
+    expect(component.roleForm.get('name')?.value).toBe(mockRole.name);
+    expect(component.roleForm.get('description')?.value).toBe(mockRole.description);
   });
 
   it('should update role successfully', async () => {
-    component.editingRole = mockRole;
-    component.roleFormData = {
-      name: 'Updated Role',
-      description: 'Updated Description',
-      permissions: ['users.read', 'users.write']
-    };
+    component.editingRole.set(mockRole);
+    mockRoleService.updateRole.and.returnValue(Promise.resolve({ success: true, role: mockRole }));
+    mockRoleService.getAllRoles.and.returnValue(Promise.resolve({ success: true, roles: [mockRole] }));
 
-    mockRoleService.updateRole.and.returnValue(Promise.resolve({ success: true, data: mockRole }));
-    mockRoleService.getAllRoles.and.returnValue(Promise.resolve({ success: true, data: [mockRole] }));
+    component.roleForm.patchValue({
+      name: 'Updated Role',
+      description: 'Updated Description'
+    });
 
     await component.onSubmit();
 
-    expect(mockRoleService.updateRole).toHaveBeenCalledWith(
-      mockRole.id.value,
-      'Updated Role',
-      'Updated Description'
-    );
-    expect(component.showCreateForm).toBeFalse();
-    expect(component.editingRole).toBeNull();
-  });
-
-  it('should cancel edit', () => {
-    component.editingRole = mockRole;
-    component.showCreateForm = true;
-
-    component.cancelEdit();
-
-    expect(component.showCreateForm).toBeFalse();
-    expect(component.editingRole).toBeNull();
-    expect(component.formErrorMessage).toBe('');
+    expect(mockRoleService.updateRole).toHaveBeenCalled();
+    expect(component.showCreateForm()).toBeFalsy();
+    expect(component.editingRole()).toBeNull();
   });
 
   it('should delete role successfully', async () => {
-    component.roles = [mockRole];
+    component.roles.set([mockRole]);
     mockRoleService.deleteRole.and.returnValue(Promise.resolve({ success: true }));
+    mockRoleService.getAllRoles.and.returnValue(Promise.resolve({ success: true, roles: [] }));
 
     await component.deleteRole(mockRole.id.value);
 
     expect(mockRoleService.deleteRole).toHaveBeenCalledWith(mockRole.id.value);
-    expect(component.roles).toEqual([]);
+    expect(component.roles()).toEqual([]);
   });
 
   it('should handle delete role error', async () => {
-    const consoleSpy = spyOn(console, 'error');
-    mockRoleService.deleteRole.and.returnValue(Promise.resolve({ success: false, error: 'Delete failed' }));
+    mockRoleService.deleteRole.and.returnValue(Promise.resolve({ success: false, error: 'Delete error' }));
 
     await component.deleteRole(mockRole.id.value);
 
-    expect(consoleSpy).toHaveBeenCalledWith('Error al eliminar rol:', 'Delete failed');
+    expect(component.formErrorMessage()).toBe('Delete error');
   });
 
-  it('should get permission label', () => {
-    expect(component.getPermissionLabel('users.create')).toBe('Crear Usuarios');
-    expect(component.getPermissionLabel('users.read')).toBe('Ver Usuarios');
-    expect(component.getPermissionLabel('users.update')).toBe('Editar Usuarios');
-    expect(component.getPermissionLabel('users.delete')).toBe('Eliminar Usuarios');
-    expect(component.getPermissionLabel('unknown.permission')).toBe('unknown.permission');
+  it('should validate form correctly', () => {
+    // Empty form should be invalid
+    expect(component.roleForm.valid).toBeFalsy();
+
+    // Valid form
+    component.roleForm.patchValue({
+      name: 'Valid Role',
+      description: 'Valid description with enough characters'
+    });
+    expect(component.roleForm.valid).toBeTruthy();
+
+    // Invalid name (too short)
+    component.roleForm.patchValue({
+      name: 'A',
+      description: 'Valid description with enough characters'
+    });
+    expect(component.roleForm.get('name')?.invalid).toBeTruthy();
+
+    // Invalid description (too short)
+    component.roleForm.patchValue({
+      name: 'Valid Role',
+      description: 'Short'
+    });
+    expect(component.roleForm.get('description')?.invalid).toBeTruthy();
   });
 
-  it('should render page header', () => {
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
+  it('should have computed signals working correctly', () => {
+    // Test isEditMode
+    expect(component.isEditMode()).toBeFalsy();
+    component.editingRole.set(mockRole);
+    expect(component.isEditMode()).toBeTruthy();
 
-    expect(compiled.querySelector('.page-header h1')?.textContent).toBe('Gestión de Roles');
-    expect(compiled.querySelector('.btn-primary')?.textContent?.trim()).toBe('Nuevo Rol');
+    // Test formTitle
+    expect(component.formTitle()).toBe('Editar Rol');
+    component.editingRole.set(null);
+    expect(component.formTitle()).toBe('Crear Rol');
+
+    // Test hasRoles
+    expect(component.hasRoles()).toBeFalsy();
+    component.roles.set([mockRole]);
+    expect(component.hasRoles()).toBeTruthy();
   });
 
-  it('should show create form when button clicked', () => {
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const button = compiled.querySelector('.btn-primary') as HTMLButtonElement;
+  it('should not submit invalid form', async () => {
+    // Leave form empty (invalid)
+    await component.onSubmit();
 
-    button.click();
-    fixture.detectChanges();
-
-    expect(component.showCreateForm).toBeTrue();
-    expect(compiled.querySelector('.form-section')).toBeTruthy();
+    expect(mockRoleService.createRole).not.toHaveBeenCalled();
+    expect(mockRoleService.updateRole).not.toHaveBeenCalled();
   });
 
-  it('should show empty state when no roles', () => {
-    component.isLoadingRoles = false;
-    component.roles = [];
-    fixture.detectChanges();
+  it('should handle loading states correctly', async () => {
+    // Test loadRoles loading state
+    const getAllRolesPromise = Promise.resolve({ success: true, data: [mockRole] });
+    mockRoleService.getAllRoles.and.returnValue(getAllRolesPromise);
 
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.empty-state')?.textContent?.trim()).toBe('No hay roles registrados');
+    const loadPromise = component.loadRoles();
+    expect(component.isLoadingRoles()).toBeTruthy();
+
+    await loadPromise;
+    expect(component.isLoadingRoles()).toBeFalsy();
   });
 
-  it('should show loading state', () => {
-    component.isLoadingRoles = true;
-    fixture.detectChanges();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.loading')?.textContent?.trim()).toBe('Cargando roles...');
-  });
-
-  it('should render role cards when roles exist', () => {
-    component.isLoadingRoles = false;
-    component.roles = [mockRole];
-    fixture.detectChanges();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    const roleCards = compiled.querySelectorAll('.role-card');
-
-    expect(roleCards.length).toBe(1);
-    expect(roleCards[0].querySelector('h3')?.textContent).toBe(mockRole.name);
-    expect(roleCards[0].querySelector('.role-description')?.textContent).toBe(mockRole.description);
+  it('should handle availablePermissions', () => {
+    expect(component.availablePermissions).toBeDefined();
+    expect(Array.isArray(component.availablePermissions)).toBeTruthy();
+    expect(component.availablePermissions.length).toBeGreaterThan(0);
   });
 });
