@@ -15,6 +15,7 @@
           formControlName="email"
           class="form-control"
           [class.error]="email?.invalid && email?.touched"
+          (blur)="onFieldBlur('email')"
         >
         @if(email?.invalid && email?.touched){
           <div class="error-message">
@@ -36,6 +37,7 @@
           formControlName="password"
           class="form-control"
           [class.error]="password?.invalid && password?.touched"
+          (blur)="onFieldBlur('password')"
         >
         @if(password?.invalid && password?.touched){
           <div  class="error-message">
@@ -58,7 +60,7 @@
       <button
         type="submit"
         class="btn btn-primary"
-        [disabled]="!canSubmit()"
+
       >
        @if(!isLoading()){
         <span>Iniciar Sesión</span>

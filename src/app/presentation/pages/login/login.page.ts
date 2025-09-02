@@ -33,11 +33,32 @@ export class LoginPage {
 
   // Computed signals
   canSubmit = computed(() => {
-    return !this.isLoading() && this.loginForm.valid;
+    const formValid = this.loginForm.valid;
+    const notLoading = !this.isLoading();
+    const formDirty = this.loginForm.dirty;
+    return formValid && notLoading && formDirty;
   });
 
+  onFieldBlur(fieldName: string): void {
+    const control = this.loginForm.get(fieldName);
+    if (control) {
+      control.markAsTouched();
+      control.updateValueAndValidity();
+    }
+  }
+
   async onSubmit(): Promise<void> {
-    if (!this.canSubmit()) return;
+    if (!this.canSubmit()) {
+      // Marcar todos los campos como touched para mostrar errores
+      Object.keys(this.loginForm.controls).forEach(key => {
+        const control = this.loginForm.get(key);
+        if (control) {
+          control.markAsTouched();
+          control.updateValueAndValidity();
+        }
+      });
+      return;
+    }
 
     this.globalState.setAuthLoading(true);
     this.globalState.clearAuthError();
