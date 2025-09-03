@@ -6,4 +6,4 @@ export * from './pages/roles/role-maintainer.page';
 export * from './pages/assign-roles/assign-roles.page';
 
 // Components
-export * from './components/role-assignment-modal/role-assignment-modal.component';
+export * from './modals/role-assignment-modal/role-assignment-modal.component';

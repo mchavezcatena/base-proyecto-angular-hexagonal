@@ -5,7 +5,7 @@ import { Role } from '../../../core/domain/entities/role.entity';
 import { UserService } from '../../../infrastructure/services/user.service';
 import { RoleService } from '../../../infrastructure/services/role.service';
 import { AssignRoleToUserUseCase } from '../../../core/application/use-cases/user/assign-role-to-user.use-case';
-import { RoleAssignmentModalComponent } from '../../components/role-assignment-modal/role-assignment-modal.component';
+import { RoleAssignmentModalComponent } from '../../modals/role-assignment-modal/role-assignment-modal.component';
 import { UserRepositoryImpl } from '../../../infrastructure/repositories/user.repository.impl';
 
 // Interface para la vista de tabla
@@ -48,7 +48,7 @@ export class AssignRolesPage implements OnInit {
     await this.loadData();
   }
 
-  private async loadData(): Promise<void> {
+  async loadData(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 

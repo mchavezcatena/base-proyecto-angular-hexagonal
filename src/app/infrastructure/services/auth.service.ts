@@ -86,6 +86,8 @@ export class AuthService implements AuthServicePort {
   }
 
   getCurrentSession(): AuthSession | null {
+    console.log('AuthService - getCurrentSession: Getting current session...');
+    console.log(this.globalState.getCurrentSession());
     return this.globalState.getCurrentSession();
   }
 

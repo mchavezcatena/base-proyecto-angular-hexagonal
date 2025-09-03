@@ -82,7 +82,7 @@ describe('UserService', () => {
         new User(new UserId('1'), 'User 1', new Email('user1@example.com')),
         new User(new UserId('2'), 'User 2', new Email('user2@example.com'))
       ];
-      const mockResponse = { success: true, users: mockUsers };
+      const mockResponse = { success: true, users: mockUsers, error: null };
 
       mockGetAllUsersUseCase.execute.and.returnValue(Promise.resolve(mockResponse));
 

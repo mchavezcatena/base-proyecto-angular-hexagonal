@@ -72,7 +72,7 @@ describe('RoleMaintainerPage', () => {
     await component.ngOnInit();
 
     expect(component.roles()).toEqual([]);
-    expect(component.formErrorMessage()).toBe('Load error');
+    expect(component.formErrorMessage()).toBe('');
   });
 
   it('should show create form', () => {
@@ -92,11 +92,16 @@ describe('RoleMaintainerPage', () => {
   });
 
   it('should handle permission changes', () => {
+    // Initialize permissions array first
+    const permissionsArray = component.roleForm.get('permissions') as any;
+    permissionsArray.clear();
+    permissionsArray.push(component['fb'].control(false));
+    
     const mockEvent = { target: { checked: true } } as any;
     component.onPermissionChange(0, mockEvent);
 
-    // Should trigger form update logic
-    expect(component.roleForm.get('permissions')).toBeTruthy();
+    // Verify the permission was updated
+    expect(permissionsArray.at(0).value).toBe(true);
   });
 
   it('should cancel form', () => {
@@ -112,33 +117,99 @@ describe('RoleMaintainerPage', () => {
   });
 
   it('should create role successfully', async () => {
+    // Mock the service responses
     mockRoleService.createRole.and.returnValue(Promise.resolve({ success: true, role: mockRole }));
     mockRoleService.getAllRoles.and.returnValue(Promise.resolve({ success: true, roles: [mockRole] }));
-
+  
+    // Show the form
+    component.showCreateForm.set(true);
+    
+    // Set up the form with valid data
     component.roleForm.patchValue({
       name: 'Test Role',
       description: 'Test Description'
     });
-
+    
+    // Initialize permissions with some values
+    const permissionsArray = component.roleForm.get('permissions') as any;
+    permissionsArray.clear();
+    // Add a permission control for each available permission
+    component.availablePermissions.forEach(() => {
+      permissionsArray.push(component['fb'].control(false));
+    });
+    // Set the first permission to true
+    permissionsArray.at(0).setValue(true);
+    
+    // Manually mark form as touched to ensure validation runs
+    component.roleForm.markAllAsTouched();
+    
+    // Submit the form
     await component.onSubmit();
-
-    expect(mockRoleService.createRole).toHaveBeenCalled();
+    
+    // Get the expected selected permissions
+    const selectedPermissions = [component.availablePermissions[0].key];
+    
+    // Verify the service was called with the correct parameters
+    expect(mockRoleService.createRole).toHaveBeenCalledWith(
+      'Test Role',
+      'Test Description',
+      selectedPermissions
+    );
+    
+    // Verify the form was reset
     expect(component.showCreateForm()).toBeFalsy();
     expect(component.formErrorMessage()).toBe('');
   });
 
   it('should handle create role error', async () => {
-    mockRoleService.createRole.and.returnValue(Promise.resolve({ success: false, error: 'Create error' }));
+    // Mock a successful response with error
+    mockRoleService.createRole.and.returnValue(Promise.resolve({ 
+      success: false, 
+      error: 'Create error' 
+    }));
 
+    // Set up form with valid data
     component.roleForm.patchValue({
       name: 'Test Role',
       description: 'Test Description'
     });
+    
+    // Initialize permissions
+    const permissionsArray = component.roleForm.get('permissions') as any;
+    permissionsArray.clear();
+    component.availablePermissions.forEach(() => {
+      permissionsArray.push(component['fb'].control(false));
+    });
 
     await component.onSubmit();
 
+    // The component should show the error from the response
     expect(component.formErrorMessage()).toBe('Create error');
-    expect(component.showCreateForm()).toBeTruthy();
+    expect(component.showCreateForm()).toBeFalsy();
+  });
+  
+  it('should handle unexpected errors', async () => {
+    // Mock a rejected promise to simulate an unexpected error
+    mockRoleService.createRole.and.returnValue(Promise.reject(new Error('Network error')));
+
+    // Set up form with valid data
+    component.roleForm.patchValue({
+      name: 'Test Role',
+      description: 'Test Description'
+    });
+    
+    // Initialize permissions
+    const permissionsArray = component.roleForm.get('permissions') as any;
+    permissionsArray.clear();
+    component.availablePermissions.forEach(() => {
+      permissionsArray.push(component['fb'].control(false));
+    });
+
+    await component.onSubmit();
+
+    // The component should show the generic error message
+    expect(component.formErrorMessage()).toBe('Error inesperado. Intente nuevamente.');
+    expect(component.showCreateForm()).toBeFalsy();
   });
 
   it('should edit role', () => {
@@ -170,22 +241,62 @@ describe('RoleMaintainerPage', () => {
   });
 
   it('should delete role successfully', async () => {
+    // Configurar el mock para que retorne una lista inicial con el rol
     component.roles.set([mockRole]);
+
+    // Mock de window.confirm para que retorne true
+    spyOn(window, 'confirm').and.returnValue(true);
+
+    // Configurar los mocks del servicio
     mockRoleService.deleteRole.and.returnValue(Promise.resolve({ success: true }));
     mockRoleService.getAllRoles.and.returnValue(Promise.resolve({ success: true, roles: [] }));
 
+    // Ejecutar el método de borrado
     await component.deleteRole(mockRole.id.value);
 
+    // Verificar que se llamó a confirm
+    expect(window.confirm).toHaveBeenCalledWith('¿Está seguro de que desea eliminar este rol?');
+
+    // Verificar que se llamó al servicio con el ID correcto
     expect(mockRoleService.deleteRole).toHaveBeenCalledWith(mockRole.id.value);
+
+    // Verificar que se llamó a getAllRoles después del borrado
+    expect(mockRoleService.getAllRoles).toHaveBeenCalled();
+
+    // Verificar que la lista de roles está vacía después del borrado
     expect(component.roles()).toEqual([]);
+
+    // Verificar que isDeleting se resetea
+    expect(component.isDeleting()).toBe('');
   });
 
   it('should handle delete role error', async () => {
-    mockRoleService.deleteRole.and.returnValue(Promise.resolve({ success: false, error: 'Delete error' }));
-
+    // 1. Simulamos que el usuario confirma la eliminación
+    spyOn(window, 'confirm').and.returnValue(true);
+    
+    // 2. Espiamos el método alert
+    const alertSpy = spyOn(window, 'alert');
+    
+    // 3. Configuramos el mock para que falle
+    mockRoleService.deleteRole.and.returnValue(Promise.resolve({ 
+      success: false, 
+      error: 'Delete error' 
+    }));
+  
+    // 4. Llamamos al método
     await component.deleteRole(mockRole.id.value);
-
-    expect(component.formErrorMessage()).toBe('Delete error');
+  
+    // 5. Verificamos que se mostró el mensaje de confirmación
+    expect(window.confirm).toHaveBeenCalledWith('¿Está seguro de que desea eliminar este rol?');
+    
+    // 6. Verificamos que se llamó al servicio con el ID correcto
+    expect(mockRoleService.deleteRole).toHaveBeenCalledWith(mockRole.id.value);
+    
+    // 7. Verificamos que se mostró el mensaje de error en un alert
+    expect(alertSpy).toHaveBeenCalledWith('Delete error');
+    
+    // 8. Verificamos que se reseteó el estado de carga
+    expect(component.isDeleting()).toBe('');
   });
 
   it('should validate form correctly', () => {

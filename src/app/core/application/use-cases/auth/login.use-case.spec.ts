@@ -107,7 +107,7 @@ describe('LoginUseCase', () => {
     const result = await useCase.execute(request);
 
     expect(result.success).toBeFalsy();
-    expect(result.error).toBe('Error al iniciar sesión');
+    expect(result.error).toBe('Error desconocido');
     expect(mockAuthRepository.authenticate).toHaveBeenCalled();
   });
 

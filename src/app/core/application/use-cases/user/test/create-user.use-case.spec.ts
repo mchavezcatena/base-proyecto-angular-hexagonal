@@ -1,10 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { CreateUserUseCase } from './create-user.use-case';
-import { UserRepository } from '../../../domain/repositories/user.repository';
-import { USER_REPOSITORY } from '../../ports/injection-tokens';
-import { User } from '../../../domain/entities/user.entity';
-import { Email } from '../../../domain/value-objects/email.vo';
-import { UserId } from '../../../domain/value-objects/user-id.vo';
+import { UserRepository, User, UserId, Email } from '../../../../domain';
+import { USER_REPOSITORY } from '../../../ports/injection-tokens';
+import { CreateUserUseCase } from '../create-user.use-case';
+
 
 describe('CreateUserUseCase', () => {
   let useCase: CreateUserUseCase;

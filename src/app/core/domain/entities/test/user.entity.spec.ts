@@ -1,6 +1,7 @@
-import { User } from './user.entity';
-import { UserId } from '../value-objects/user-id.vo';
-import { Email } from '../value-objects/email.vo';
+import { Email } from "../../value-objects/email.vo";
+import { UserId } from "../../value-objects/user-id.vo";
+import { User } from "../user.entity";
+
 
 describe('User Entity', () => {
   let userId: UserId;

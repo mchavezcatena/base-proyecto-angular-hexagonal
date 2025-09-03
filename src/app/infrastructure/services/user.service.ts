@@ -22,9 +22,13 @@ export class UserService implements UserServicePort {
   async createUser(name: string, email: string): Promise<{ success: boolean; user?: User; error?: string }> {
     return await this.createUserUseCase.execute({ name, email });
   }
-
   async getAllUsers(): Promise<{ success: boolean; users?: User[]; error?: string }> {
-    return await this.getAllUsersUseCase.execute();
+    const result = await this.getAllUsersUseCase.execute();
+    return {
+      success: result.success,
+      users: result.users,
+      error: result.error || undefined
+    };
   }
 
   async updateUser(id: string, name?: string, email?: string): Promise<{ success: boolean; user?: User; error?: string }> {

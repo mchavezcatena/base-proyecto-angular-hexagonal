@@ -6,78 +6,8 @@ import { GlobalStateService } from '../../services/global.service';
   selector: 'app-loading',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    @if (isLoading()) {
-      <div class="loading-overlay">
-        <div class="loading-container">
-          <div class="loading-spinner"></div>
-          <p class="loading-text">Cargando...</p>
-        </div>
-      </div>
-    }
-  `,
-  styles: [`
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-    }
-
-    .loading-container {
-      background: white;
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-      min-width: 200px;
-    }
-
-    .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #3b82f6;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .loading-text {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 500;
-      color: #374151;
-    }
-
-    /* Dark mode styles */
-    :host-context(.dark) .loading-container {
-      background: #1f2937;
-      color: #f9fafb;
-    }
-
-    :host-context(.dark) .loading-text {
-      color: #f9fafb;
-    }
-
-    :host-context(.dark) .loading-spinner {
-      border-color: #374151;
-      border-top-color: #60a5fa;
-    }
-  `]
+  templateUrl: './loading.component.html',
+  styleUrls: ['./loading.component.scss']
 })
 export class LoadingComponent {
   private globalState = inject(GlobalStateService);

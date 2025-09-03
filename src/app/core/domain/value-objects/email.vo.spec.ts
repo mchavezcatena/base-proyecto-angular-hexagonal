@@ -5,6 +5,7 @@ describe('Email Value Object', () => {
     const email = new Email('test@example.com');
     expect(email.value).toBe('test@example.com');
   });
+  
 
   it('should normalize email to lowercase', () => {
     const email = new Email('TEST@EXAMPLE.COM');
@@ -16,11 +17,24 @@ describe('Email Value Object', () => {
     expect(email.value).toBe('test@example.com');
   });
 
+  it('should throw error for empty email', () => {
+    expect(() => new Email('')).toThrowError('El email no puede estar vacío');
+  });
+
   it('should throw error for invalid email format', () => {
-    expect(() => new Email('invalid-email')).toThrow('Email inválido');
-    expect(() => new Email('test@')).toThrow('Email inválido');
-    expect(() => new Email('@example.com')).toThrow('Email inválido');
-    expect(() => new Email('')).toThrow('Email inválido');
+    const testInvalidEmail = (email: string) => {
+      try {
+        new Email(email);
+        fail('Expected error was not thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toBe('Formato de email inválido');
+      }
+    };
+
+    testInvalidEmail('invalid-email');
+    testInvalidEmail('test@');
+    testInvalidEmail('@example.com');
   });
 
   it('should handle equals method correctly', () => {
@@ -31,11 +45,21 @@ describe('Email Value Object', () => {
     expect(email1.equals(email2)).toBeTruthy();
     expect(email1.equals(email3)).toBeFalsy();
   });
-
+  
   it('should validate domain correctly', () => {
-    expect(() => new Email('test@.com')).toThrow('Email inválido');
-    expect(() => new Email('test@domain.')).toThrow('Email inválido');
-    expect(() => new Email('test@domain')).toThrow('Email inválido');
+    const testInvalidEmail = (email: string) => {
+      try {
+        new Email(email);
+        fail('Expected error was not thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toBe('Formato de email inválido');
+      }
+    };
+
+    testInvalidEmail('test@.com');
+    testInvalidEmail('test@domain.');
+    testInvalidEmail('test@domain');
   });
 
   it('should handle special characters in email', () => {

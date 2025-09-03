@@ -1,33 +1,32 @@
-import { Injectable, Inject } from '@angular/core';
+import { inject } from '@angular/core';
 import { UserRepository } from '../../../domain/repositories/user.repository';
-import { USER_REPOSITORY } from '../../ports/injection-tokens';
 import { User } from '../../../domain/entities/user.entity';
+import { USER_REPOSITORY } from '../../ports/injection-tokens';
 
 export interface GetAllUsersResponse {
   success: boolean;
-  users?: User[];
-  error?: string;
+  users: User[];
+  error: string | null;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
 export class GetAllUsersUseCase {
-  constructor(@Inject(USER_REPOSITORY) private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository = inject(USER_REPOSITORY)
+  ) {}
 
   async execute(): Promise<GetAllUsersResponse> {
     try {
       const users = await this.userRepository.findAll();
-
       return {
         success: true,
-        users
+        users,
+        error: null
       };
-
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Error al obtener usuarios'
+        users: [], // Aseguramos que siempre devolvemos un array vacío en caso de error
+        error: 'Error al obtener usuarios'
       };
     }
   }

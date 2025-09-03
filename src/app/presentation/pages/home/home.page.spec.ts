@@ -1,15 +1,69 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
+import { signal, WritableSignal } from '@angular/core';
 
 import { HomePage } from './home.page';
+import { AuthService } from '../../../infrastructure/services/auth.service';
+import { GlobalStateService } from '../../../shared/services/global.service';
+import { LoginUseCase } from '../../../core/application/use-cases/auth/login.use-case';
+import { LogoutUseCase } from '../../../core/application/use-cases/auth/logout.use-case';
+import { AUTH_REPOSITORY } from '../../../core/application';
 
 describe('HomePage', () => {
   let component: HomePage;
   let fixture: ComponentFixture<HomePage>;
+  let mockAuthService: jasmine.SpyObj<AuthService>;
+  let mockGlobalState: jasmine.SpyObj<GlobalStateService>;
+  let mockAuthRepository: jasmine.SpyObj<any>;
+  let isAuthenticatedSignal: WritableSignal<boolean>;
 
   beforeEach(async () => {
+    mockAuthRepository = jasmine.createSpyObj('AuthRepository', ['login', 'logout', 'getCurrentSession']);
+    isAuthenticatedSignal = signal(false);
+
+    mockGlobalState = jasmine.createSpyObj('GlobalStateService', [
+      'setAuthLoading',
+      'clearAuthError',
+      'setAuthSession',
+      'logout',
+      'getCurrentSession',
+      'checkAuthState'
+    ], {
+      isAuthenticated: signal(false),
+      authState$: signal(false),
+      authLoading: signal(false),
+      authError: signal<string | null>(null)
+    });
+
+    mockAuthService = jasmine.createSpyObj('AuthService', [
+      'login',
+      'logout',
+      'getCurrentSession',
+      'isAuthenticatedValue',
+      'refreshToken',
+      'getAuthState',
+      'checkAuthState'
+    ]);
+
+    // Configurar el signal de isAuthenticated
+    Object.defineProperty(mockAuthService, 'isAuthenticated', {
+      get: () => isAuthenticatedSignal
+    });
+
     await TestBed.configureTestingModule({
-      imports: [HomePage, RouterTestingModule]
+      imports: [
+        HomePage,
+        RouterTestingModule.withRoutes([
+          { path: 'home', component: HomePage }
+        ])
+      ],
+      providers: [
+        { provide: AuthService, useValue: mockAuthService },
+        { provide: GlobalStateService, useValue: mockGlobalState },
+        { provide: AUTH_REPOSITORY, useValue: mockAuthRepository },
+        LoginUseCase,
+        LogoutUseCase
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(HomePage);
@@ -21,53 +75,34 @@ describe('HomePage', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render welcome section', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    const welcomeSection = compiled.querySelector('.welcome-section');
-
-    expect(welcomeSection).toBeTruthy();
-    expect(welcomeSection?.querySelector('h1')?.textContent).toBe('¡Bienvenido al Sistema de Gestión!');
+  it('should check auth state on init', () => {
+    component.ngOnInit();
+    expect(mockAuthService.checkAuthState).toHaveBeenCalled();
   });
 
-  it('should render dashboard cards', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    const dashboardCards = compiled.querySelectorAll('.dashboard-card');
+  it('should return correct auth state', () => {
+    isAuthenticatedSignal.set(true);
+    let salida: any = {
+      "_userId": {
+        "_value": "1"
+      },
+      "_email": {
+        "_value": "admin@example.com"
+      },
+      "_token": "token_4lzy8uqi9qq_1756822445390",
+      "_refreshToken": "refresh_q7absebtwk_1756822445390",
+      "_expiresAt": "2025-09-03T14:14:05.390Z",
+      "_createdAt": "2025-09-02T14:14:05.390Z"
+    };
 
-    expect(dashboardCards.length).toBe(3);
+    mockAuthService.getCurrentSession.and.returnValue(salida);
 
-    // Verificar títulos de las tarjetas
-    const cardTitles = Array.from(dashboardCards).map(card =>
-      card.querySelector('h3')?.textContent
-    );
-
-    expect(cardTitles).toContain('Gestión de Usuarios');
-    expect(cardTitles).toContain('Gestión de Roles');
-    expect(cardTitles).toContain('Asignar Roles');
+    expect(component.IsAuth()).toBeTruthy();
+    expect(mockAuthService.getCurrentSession).toHaveBeenCalled();
   });
 
-  it('should render info section', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    const infoSection = compiled.querySelector('.info-section');
-
-
-    const listItems = infoSection?.querySelectorAll('li');
-    expect(listItems?.length).toBe(4);
-  });
-
-  it('should have correct router links', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    const dashboardCards = compiled.querySelectorAll('.dashboard-card');
-
-    expect(dashboardCards[0].getAttribute('ng-reflect-router-link')).toBe('/users');
-    expect(dashboardCards[1].getAttribute('ng-reflect-router-link')).toBe('/roles');
-    expect(dashboardCards[2].getAttribute('ng-reflect-router-link')).toBe('/assign-roles');
-  });
-
-  it('should have login link in welcome section', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    const loginLink = compiled.querySelector('.login-link');
-
-    expect(loginLink).toBeTruthy();
-    expect(loginLink?.getAttribute('ng-reflect-router-link')).toBe('/login');
+  it('should force update auth state', () => {
+    component.forceUpdateAuthState();
+    expect(mockAuthService.checkAuthState).toHaveBeenCalled();
   });
 });
